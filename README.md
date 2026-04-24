@@ -55,7 +55,7 @@ go mod tidy
 
 ```bash
 
-# 方式2：进入 lab1 目录运行
+# 进入 lab1 目录运行
 cd lab1
 go run main.go -input input/nfa.txt 
 ```
