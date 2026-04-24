@@ -1,8 +1,6 @@
 package dfa
 
 import (
-	"fmt"
-
 	"github.com/Lan-lann/go-compiler-lab/lab1/internal/nfa"
 	mapset "github.com/deckarep/golang-set/v2"
 )
@@ -36,7 +34,7 @@ func (dfa *DFA) Subset(nfa *nfa.NFA) {
 			}
 
 			// 判断DFA 状态集合中是否已经有该状态
-			fmt.Println(char, nextStates.ToSlice())
+
 			nextStatesByName := getStateName(setToKey(nextStates), &dfa.StateMap)
 			if !dfa.States.Contains(nextStatesByName) {
 
