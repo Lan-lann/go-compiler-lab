@@ -12,7 +12,7 @@ import (
 
 func main() {
 
-	inputFile := flag.String("input", "nfa.txt", "指定NFA文件路径")
+	inputFile := flag.String("input", "input/nfa.txt", "指定NFA文件路径")
 	flag.Parse()
 
 	nfa, err := nfa.LoadNFA(*inputFile)
