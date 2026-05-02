@@ -10,7 +10,7 @@ import (
 )
 
 // 绘制 DFA 图像
-func DrawGraphDFA(dfa *dfa.DFA) {
+func DrawGraphDFA(dfa *dfa.DFA, path string) {
 	ctx := context.Background()
 	g, err := graphviz.New(ctx)
 	if err != nil {
@@ -56,13 +56,13 @@ func DrawGraphDFA(dfa *dfa.DFA) {
 		e.SetLabel(ch)
 	}
 
-	if err := g.RenderFilename(ctx, graph, graphviz.PNG, "./output/graph_dfa.png"); err != nil {
+	if err := g.RenderFilename(ctx, graph, graphviz.PNG, path); err != nil {
 		panic(err)
 	}
 }
 
 // 绘制 NFA 图像
-func DrawGraphNFA(nfa *nfa.NFA) {
+func DrawGraphNFA(nfa *nfa.NFA, path string) {
 	ctx := context.Background()
 	g, err := graphviz.New(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func DrawGraphNFA(nfa *nfa.NFA) {
 
 	}
 
-	if err := g.RenderFilename(ctx, graph, graphviz.PNG, "../output/graph_nfa.png"); err != nil {
+	if err := g.RenderFilename(ctx, graph, graphviz.PNG, path); err != nil {
 		panic(err)
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/Lan-lann/go-compiler-lab/lab2/internal/dfa"
@@ -8,7 +9,11 @@ import (
 )
 
 func main() {
-	dfa, err := dfa.LoadDFA("./input/dfa.txt")
+	inputFile := flag.String("input", "input/dfa.txt", "指定NFA文件路径")
+	flag.Parse()
+
+	dfa, err := dfa.LoadDFA(*inputFile)
+
 	if err != nil {
 		panic(err)
 	}
@@ -27,5 +32,6 @@ func main() {
 		fmt.Println(k, v)
 	}
 
-	render.DrawGraphDFA(newDFA)
+	render.DrawGraphDFA(dfa, "output/graph_original_dfa.png")
+	render.DrawGraphDFA(newDFA, "output/graph_minimal_dfa.png")
 }

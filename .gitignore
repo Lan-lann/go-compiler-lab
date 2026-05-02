@@ -19,7 +19,7 @@ coverage.out
 *.svg
 *.pdf
 *.txt
-
+!images/**/*.png
 # macOS 垃圾文件
 .DS_Store
 .DS_Store?
