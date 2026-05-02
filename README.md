@@ -101,9 +101,13 @@ a,b
 ```
 ## 运行结果
 **NFA**
+
 ![NFA](images/lab1/graph_nfa.png)
+
 **DFA**
+
 ![DFA](images/lab1/graph_dfa.png)
+
 ## 实验2
 
 ### 功能说明
@@ -176,9 +180,13 @@ a,b
 7,b=2
 ```
 ## 运行结果
+
 **原 DFA**
+
 ![NFA](images/lab2/graph_original_dfa.png)
+
 **最小化 DFA**
+
 ![DFA](images/lab2/graph_minimal_dfa.png)
 
 
