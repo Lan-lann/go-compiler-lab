@@ -26,18 +26,18 @@
 
 ```plain text
 lab1/
-├── main.go          # 程序入口（主函数）
-├── input/           # 输入文件目录
-├── internal/        # 内部模块
-│   ├── dfa/
-│   │   ├── dfa.go
-│   │   └── subset.go
+├── main.go                # 程序入口（主函数）
+├── input/                 # 输入文件目录
+├── internal/              # 内部模块
+│   ├── dfa/          
+│   │   ├── dfa.go         # DFA 数据定义
+│   │   └── subset.go      # 子集法
 │   ├── nfa/
-│   │   ├── nfa.go
-│   │   └── transition.go
+│   │   ├── nfa.go         # NFA 数据定义
+│   │   └── transition.go  # eplison-closure 方法和 move 方法
 │   └── render/
-│       └── draw.go
-└── output/          # 生成文件输出目录
+│       └── draw.go        # Graphviz绘图
+└── output/                # 生成文件输出目录
 ```
 
 ## 前置要求
@@ -123,19 +123,19 @@ a,b
 
 ```plain text
 lab2/
-├── main.go          # 程序入口（主函数）
-├── input/           # 输入文件目录
-├── internal/        # 内部模块
+├── main.go                # 程序入口（主函数）
+├── input/                 # 输入文件目录
+├── internal/              # 内部模块
 │   ├── dfa/
-│   │   ├── dfa.go
-│   │   ├── minimize.go
-│   │   └── subset.go
+│   │   ├── dfa.go         # DFA 数据定义
+│   │   ├── minimize.go    # 最小化
+│   │   └── subset.go      # 子集法
 │   ├── nfa/
-│   │   ├── nfa.go
-│   │   └── transition.go
+│   │   ├── nfa.go         # NFA 数据定义
+│   │   └── transition.go  # eplison-closure 方法和 move 方法
 │   └── render/
-│       └── draw.go
-└── output/          # 生成文件输出目录
+│       └── draw.go        # Graphviz绘图
+└── output/                # 生成文件输出目录
 ```
 
 ### 运行实验2
