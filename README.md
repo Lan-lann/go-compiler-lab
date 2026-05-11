@@ -2,7 +2,8 @@
 
 编译原理课程实验
 
-![Static Badge](https://img.shields.io/badge/AHU-orange) ![Static Badge](https://img.shields.io/badge/Golang-1.26-blue)
+![Static Badge](https://img.shields.io/badge/AHU-orange) ![Static Badge](https://img.shields.io/badge/Golang-1.26-blue?logo=go)
+
 
 ## 实验结构
 
