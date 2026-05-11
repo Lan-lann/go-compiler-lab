@@ -1,7 +1,8 @@
 # go\-compiler\-lab
 
-编译原理课程实验（Go 实现）
+编译原理课程实验
 
+![Static Badge](https://img.shields.io/badge/Golang-1.26-blue)
 
 ## 实验结构
 
