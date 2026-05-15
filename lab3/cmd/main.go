@@ -16,11 +16,11 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(g)
+	if g.IsLL1() {
+		fmt.Println("是 LL1 文法")
+		g.ShowSelectSet()
+	} else {
+		fmt.Println("不是 LL1 文法")
+	}
 
-	fmt.Println(g.FindDeriveEplison())
-
-	fmt.Println(g.GetNonTerminalFirstSet())
-
-	fmt.Println(g.GetRightFirstSet())
 }

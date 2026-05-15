@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -309,6 +310,121 @@ func (g *Grammar) GetRightFirstSet() map[string]mapset.Set[string] {
 	}
 	return firstSets
 
+}
+
+func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
+
+	firstSets := g.GetNonTerminalFirstSet()
+	followSets := map[string]mapset.Set[string]{}
+
+	for _, left := range g.NonTerminalSet {
+		followSets[left] = mapset.NewSet[string]()
+	}
+
+	followSets[g.Start].Add("#")
+
+	for {
+		// 依据扫描一遍是否有集合大小改变判断是否结束
+		flag := true
+
+		for left, rights := range g.Productions {
+
+			for _, right := range rights {
+
+				// 循环判断
+				rt := []rune(right)
+				l := len(rt)
+				for i, ch := range rt {
+					// 为非终结符
+					if string(ch) != "ε" && !slices.Contains(g.TerminalSet, string(ch)) {
+						pSize := followSets[string(ch)].Cardinality()
+						// ch 不是最后一个字符
+						if i != l-1 {
+							bch := string(rt[i+1])
+
+							if slices.Contains(g.TerminalSet, bch) {
+								followSets[string(ch)].Add(bch)
+							} else {
+								addSet := firstSets[bch].Clone()
+								addSet.Remove("ε")
+								followSets[string(ch)].Append(addSet.ToSlice()...)
+								if firstSets[bch].Contains("ε") {
+									followSets[string(ch)].Append(followSets[left].ToSlice()...)
+								}
+							}
+						} else {
+							followSets[string(ch)].Append(followSets[left].ToSlice()...)
+						}
+						if followSets[string(ch)].Cardinality() > pSize {
+							flag = false
+						}
+					}
+				}
+			}
+		}
+		// 如果遍历一遍后First 集合不再改变，则结束
+		if flag {
+			break
+		}
+	}
+
+	return followSets
+}
+
+func (g *Grammar) GetSelectSet() map[string][]mapset.Set[string] {
+
+	rightFirstSets := g.GetRightFirstSet()
+
+	followSet := g.GetFollowSet()
+	selectSets := map[string][]mapset.Set[string]{}
+	// for _, left := range g.NonTerminalSet {
+	// 	selectSets[left] = mapset.NewSet[string]()
+	// }
+
+	for left, rights := range g.Productions {
+		for idx, right := range rights {
+			// fmt.Println(left, right)
+			selectSets[left] = append(selectSets[left], mapset.NewSet[string]())
+
+			if rightFirstSets[right].Contains("ε") {
+				addSet := rightFirstSets[right].Clone()
+				addSet.Remove("ε")
+				selectSets[left][idx].Append(addSet.ToSlice()...)
+				selectSets[left][idx].Append(followSet[left].ToSlice()...)
+			} else {
+				addSet := rightFirstSets[right].Clone()
+				addSet.Remove("ε")
+				selectSets[left][idx].Append(addSet.ToSlice()...)
+			}
+		}
+	}
+
+	return selectSets
+}
+
+func (g *Grammar) IsLL1() bool {
+
+	selectSets := g.GetSelectSet()
+	for _, rights := range selectSets {
+		for i, l := 0, len(rights); i < l; i++ {
+			for j := i + 1; j < l; j++ {
+				if rights[i].Intersect(rights[j]).Cardinality() > 0 {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func (g *Grammar) ShowSelectSet() {
+
+	selectSets := g.GetSelectSet()
+	for left, rights := range selectSets {
+		for _, right := range rights {
+			fmt.Printf("SELECT(%s) = {%s}\n", left, strings.Join(right.ToSlice(), ","))
+		}
+	}
 }
 
 func SplitAndTrim(s string, sep string) []string {
