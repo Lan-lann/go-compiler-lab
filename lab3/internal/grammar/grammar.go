@@ -3,6 +3,7 @@ package grammar
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -62,44 +63,48 @@ func LoadGrammar(filename string) (*Grammar, error) {
 }
 
 func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
+
+	// 初始化非终结符能否推导出 ε 的判断数组（这里用 map 实现）
 	nonTerminalSetDeriveEplison := make(map[string]DependEplison)
 
-	// 复制一份产生式集合
+	// 复制一份产生式集合， 遍历后续删除操作影响原产生式集合
 	productions := make(map[string][]string, len(g.Productions))
-	for left, rights := range g.Productions {
-		productions[left] = rights
-	}
+	maps.Copy(productions, g.Productions)
 
-	keyLeft := make([]string, len(productions))
-	for key := range g.Productions {
-		keyLeft = append(keyLeft, key)
-	}
-
-	for _, left := range keyLeft {
+	// 遍历所有非终结符
+	for _, left := range g.NonTerminalSet {
+		// 取出该终结符的所有产生式
 		rights := productions[left]
-		// 某一非终结符的某一产生式右部为ε ,则将数组中对应该非终结符的标志置为 "是 ",
-		// 并 从 文 法 中 删 除 该 非 终 结 符 的 所 有 产 生 式 .
+
+		// 1. 若某一非终结符的某一产生式右部为ε ,则将数组中对应该非终结符的标志置为 "是 ",
+		// 并从文法中删除该非终结符的所有产生式.
 		if slices.Contains(rights, "ε") {
 			nonTerminalSetDeriveEplison[left] = CanDerive
 			delete(productions, left)
 			continue
 		}
 
-		// 删 除 所 有 右 部 含 有 终 结 符 的 产 生 式 ,若 这 使 得 以 某 一 非 终 结 符 为 左 部 的 所 有 产 生 式 都 被 删 除 ,
-		// 则 将 数 组 中 对 应 该 非 终 结 符 的 标 记 值 改 为 "否 ",说 明 该 非 终 结 符 不 能 推 出 6。
-		// 遍历某一非终结符的所有产生式
+		// 2. 删除所有右部含有终结符的产生式 ,若这使得以某一非终结符为左部的所有产生式都被删除 ,
+		// 则将数组中对应该非终结符的标记值改为"否",说明该非终结符不能推出 ε。
+
+		// 遍历某一非终结符的产生式(采用倒序遍历，避免产生式前移导致直接跳过下一产生式)
 		for idx := len(rights) - 1; idx >= 0; idx-- {
+			// 取出该产生式
 			right := rights[idx]
-			// 判断某产生式是否含有终结符
+
+			// 判断该产生式是否含有终结符
 			for _, t := range g.TerminalSet {
-				// 有则删除
+				// 若含有终结符，则删除
 				if strings.Contains(right, t) {
 					productions[left] = append(productions[left][:idx], productions[left][idx+1:]...)
 					break
 				}
 			}
+
+			// 若该非终结符的所有产生式都被删除，则将数组中对应该非终结符的标记值改为"否
 			if len(productions[left]) == 0 {
 				nonTerminalSetDeriveEplison[left] = NotCanDerive
+				// 从产生式集合中删除该映射, 例如: A:[]为空，删除 A
 				delete(productions, left)
 			}
 		}
@@ -119,6 +124,7 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 		secondkeyLeft = append(secondkeyLeft, key)
 	}
 	for {
+
 		for _, left := range secondkeyLeft {
 			// 多个产生式
 			rights := productions[left]
@@ -247,10 +253,12 @@ func (g *Grammar) GetNonTerminalFirstSet() map[string]mapset.Set[string] {
 }
 
 func (g *Grammar) GetRightFirstSet() map[string]mapset.Set[string] {
-
+	// 获得非终结符是否能推导出 ε
 	nonTerminalSetDeriveEplison := g.FindDeriveEplison()
+	// 获得非终结符的 First 集合
 	terminalFirstSets := g.GetNonTerminalFirstSet()
 
+	// 初始化产生式右部的 First 集合(初始为空)
 	firstSets := map[string]mapset.Set[string]{}
 	for _, rights := range g.Productions {
 		for _, right := range rights {
@@ -261,56 +269,50 @@ func (g *Grammar) GetRightFirstSet() map[string]mapset.Set[string] {
 	for {
 		// 依据扫描一遍是否有集合大小改变判断是否结束
 		flag := true
+		// 遍历所有产生式
 		for _, rights := range g.Productions {
 			for _, right := range rights {
-
+				// 记录初始集合大小
 				initialSize := firstSets[right].Cardinality()
-
-				// 处理空右部或 ε
-				if right == "" || right == "ε" || strings.TrimSpace(right) == "" {
-					firstSets[right].Add("ε")
-					if firstSets[right].Cardinality() > initialSize {
-						flag = false
-					}
-					continue
-				}
 
 				rt := []rune(right)
 				countEmpty := 0
 
+				// 遍历一条产生式右部的所有字符
 				for _, ch := range rt {
-					// ε
+					// 若为 ε，添加 ε， 退出
 					if string(ch) == "ε" {
 						firstSets[right].Add(string(ch))
 						break
 					}
 
-					// 为终结符
+					// 若为终结符， 添加该终结符，退出
 					if slices.Contains(g.TerminalSet, string(ch)) {
 						firstSets[right].Add(string(ch))
 						break
 					}
 
-					// 为非终结符
+					// 若为非终结符，如果能推导出 ε，则将 First(ch) - ε 加入，继续遍历下一个字符
 					if nonTerminalSetDeriveEplison[string(ch)] == CanDerive {
+						// 记录能推导出ε的字符数
 						countEmpty++
 						addSet := terminalFirstSets[string(ch)].Clone()
 						addSet.Remove("ε")
 						firstSets[right].Append(addSet.ToSlice()...)
 
-					} else if nonTerminalSetDeriveEplison[string(ch)] == NotCanDerive {
+					} else if nonTerminalSetDeriveEplison[string(ch)] == NotCanDerive { // 如果不能推导出 ε， 则将 First(ch)加入，停止遍历
 						addSet := terminalFirstSets[string(ch)].Clone()
 						firstSets[right].Append(addSet.ToSlice()...)
 						break
 					}
 
 				}
-
+				// 如果产生式右部字符全部可以推导出 ε， 即该右部可以推导出 ε ，则加入 ε
 				if countEmpty == len(rt) {
 					firstSets[right].Add("ε")
 				}
 
-				// 如果发生改变，则本次遍历后还需继续循环
+				// 如果有First 集合发生改变，则本次遍历后还需继续循环
 				if firstSets[right].Cardinality() > initialSize {
 					flag = false
 				}
@@ -323,8 +325,8 @@ func (g *Grammar) GetRightFirstSet() map[string]mapset.Set[string] {
 			break
 		}
 	}
-	return firstSets
 
+	return firstSets
 }
 
 func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
@@ -394,26 +396,23 @@ func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
 }
 
 func (g *Grammar) GetSelectSet() map[string][]mapset.Set[string] {
-
+	// 获取产生式右部的 First 集合
 	rightFirstSets := g.GetRightFirstSet()
-
+	// 获取非终结符的 Follow 集合
 	followSet := g.GetFollowSet()
 	selectSets := map[string][]mapset.Set[string]{}
-	// for _, left := range g.NonTerminalSet {
-	// 	selectSets[left] = mapset.NewSet[string]()
-	// }
 
 	for left, rights := range g.Productions {
 		for idx, right := range rights {
 
 			selectSets[left] = append(selectSets[left], mapset.NewSet[string]())
-
+			// 若右部能推导出ε，则 First 集合既含有右部的 First 集合（除去ε）也包含左部的 Follow 集合
 			if rightFirstSets[right].Contains("ε") {
 				addSet := rightFirstSets[right].Clone()
 				addSet.Remove("ε")
 				selectSets[left][idx].Append(addSet.ToSlice()...)
 				selectSets[left][idx].Append(followSet[left].ToSlice()...)
-			} else {
+			} else { // 若右部不能推导出ε，则 First 集合只含有右部的 First 集合（除去ε）
 				addSet := rightFirstSets[right].Clone()
 				addSet.Remove("ε")
 				selectSets[left][idx].Append(addSet.ToSlice()...)
