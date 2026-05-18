@@ -425,12 +425,14 @@ func (g *Grammar) GetSelectSet() map[string][]mapset.Set[string] {
 }
 
 func (g *Grammar) IsLL1() bool {
-
+	// 获取 SELECT 集合
 	selectSets := g.GetSelectSet()
 
+	// 遍历判断同一非终结符的所有产生式两两是否相交
 	for _, rights := range selectSets {
 		for i, l := 0, len(rights); i < l; i++ {
 			for j := i + 1; j < l; j++ {
+				// 若相交则不是 LL1 文法
 				if rights[i].Intersect(rights[j]).Cardinality() > 0 {
 					return false
 				}

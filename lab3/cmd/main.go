@@ -8,13 +8,14 @@ import (
 )
 
 func main() {
-	inputFile := flag.String("input", "input/grammar.txt", "指定文法文件路径")
+	inputFile := flag.String("input", "input/g1.txt", "指定文法文件路径")
 	flag.Parse()
 
 	g, err := grammar.LoadGrammar(*inputFile)
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println(g)
 	if g.IsLL1() {
 		fmt.Println("是 LL1 文法")
@@ -49,6 +50,7 @@ func main() {
 			if g.IsLL1() {
 				fmt.Println("改写后是 LL1 文法")
 				g.ShowSelectSet()
+				return
 			} else {
 				fmt.Println("改写后不是 LL1 文法")
 			}
