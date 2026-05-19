@@ -67,7 +67,7 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 	// 初始化非终结符能否推导出 ε 的判断数组（这里用 map 实现）
 	nonTerminalSetDeriveEplison := make(map[string]DependEplison)
 
-	// 复制一份产生式集合， 遍历后续删除操作影响原产生式集合
+	// 复制一份产生式集合， 避免后续删除操作影响原产生式集合
 	productions := make(map[string][]string, len(g.Productions))
 	maps.Copy(productions, g.Productions)
 
@@ -110,50 +110,50 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 		}
 	}
 
-	// 若 所 扫 描 到 的 非 终 结 符 在 数 组 中 对 应 的 标 志 是 “是 ",
-	// 则 删 去 该 非 终 结 符 ;若 这 使 产 生 式 右 部 为 空 ,
-	// 则 将 产 生 式 左 部 的 非 终 结 符 在 数 组 中 对 应 的 标 志 改 为 "是 ”,
-	// 并删除以该非终 结符为左部的所有产生式。
+	// 若所扫描到的非终结符在数组中对应的标志是 “是 ",
+	// 则删去该非终结符;若这使产生式右部为空 ,
+	// 则将产生式左部的非终结符在数组中对应的标志改为"是 ”,
+	// 并删除以该非终结符为左部的所有产生式。
 
-	// 若 所 扫 描 到 的 非 终 结 符 号 在 数 组 中 对 应 的 标 志 是 “否 ”,
-	// 则 删 去 该 产 生 式 ;若这使产 生 式 左 部 非 终 结 符 的 有 关 产 生 式 都 被 删 去 ,
-	// 则 把 在 数 组 中 该 非 终 结 符 对 应 的 标 志 改 成 “否 "
+	// 若所扫描到的非终结符号在数组中对应的标志是“否”,
+	// 则删去该产生式;若这使产生式左部非终结符的有关产生式都被删去 ,
+	// 则把在数组中该非终结符对应的标志改成“否"
 
-	secondkeyLeft := make([]string, len(productions))
-	for key := range productions {
-		secondkeyLeft = append(secondkeyLeft, key)
-	}
 	for {
 
-		for _, left := range secondkeyLeft {
-			// 多个产生式
+		for _, left := range g.NonTerminalSet {
+			// 获得一个非终结符的多个产生式
 			rights := productions[left]
 
 			for idx := len(rights) - 1; idx >= 0; idx-- {
-				// 一个产生式
+				// 获取一个产生式
 				right := []rune(rights[idx])
+				// 依次遍历右部
 				for j := len(right) - 1; j >= 0; j-- {
 					ch := string(right[j])
+					// 若能推导出 ε，则删除该非终结符
 					if nonTerminalSetDeriveEplison[ch] == CanDerive {
 						right = append(right[:j], right[j+1:]...)
 					}
-
+					// 若不能推导出 ε，则删除该产生式
 					if nonTerminalSetDeriveEplison[ch] == NotCanDerive {
 						rights = append(rights[:idx], rights[idx+1:]...)
 						break
 					}
 				}
 
+				// 若该产生式右部都被删除，则表示能推导出 ε，对应非终结符标记为“是“， 删除该非终结符所有产生式
 				if len(right) == 0 {
 					nonTerminalSetDeriveEplison[left] = CanDerive
 					delete(productions, left)
 					break
 				}
+			}
 
-				if len(rights) == 0 {
-					nonTerminalSetDeriveEplison[left] = NotCanDerive
-					delete(productions, left)
-				}
+			// 若该非终结符的所有产生式均被删除，则无表示法推导出 ε， 对应非终结符标记为“否“
+			if len(rights) == 0 {
+				nonTerminalSetDeriveEplison[left] = NotCanDerive
+				delete(productions, left)
 			}
 
 		}
@@ -166,6 +166,7 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 			}
 		}
 
+		// 全部判断完毕，则退出
 		if flag {
 			break
 		}
@@ -175,63 +176,54 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 }
 
 func (g *Grammar) GetNonTerminalFirstSet() map[string]mapset.Set[string] {
-
+	// 获得非终结符是否能推导出 ε
 	nonTerminalSetDeriveEplison := g.FindDeriveEplison()
 
+	// 初始化空的 First 集合
 	firstSets := map[string]mapset.Set[string]{}
 	for _, left := range g.NonTerminalSet {
 		firstSets[left] = mapset.NewSet[string]()
 	}
+
 	for {
 		// 依据扫描一遍是否有集合大小改变判断是否结束
 		flag := true
 
 		for left, rights := range g.Productions {
+
+			// 记录 First 集合初始大小
 			initialSize := firstSets[left].Cardinality()
+
 			for _, right := range rights {
-				// 处理空右部或明确的 ε 标记
-				if right == "" || right == "ε" || strings.TrimSpace(right) == "" {
-					firstSets[left].Add("ε")
-					continue
-				}
 
-				// 使用 rune 切片以支持多字节符号，先判断是否为空
-				rt0 := []rune(right)
-				if len(rt0) == 0 {
-					firstSets[left].Add("ε")
-					continue
-				}
-
-				// 首字母为终结符
-				if slices.Contains(g.TerminalSet, string(rt0[0])) {
-					firstSets[left].Add(string(rt0[0]))
-					continue
-				}
-
-				// 循环判断
 				rt := []rune(right)
+
+				// 记录右部是否均能推导出 ε
 				countEmpty := 0
+
+				// 遍历每一字符
 				for _, ch := range rt {
-					// 为终结符
+					// 若首字母为终结符， 则加入 First集合
 					if slices.Contains(g.TerminalSet, string(ch)) {
 						firstSets[left].Add(string(ch))
 						break
 					}
 
-					// 为非终结符
+					// 若为非终结符，若能推出空，则将 First(ch) - ε 加入
 					if nonTerminalSetDeriveEplison[string(ch)] == CanDerive {
 						countEmpty++
 						addSet := firstSets[string(ch)].Clone()
 						addSet.Remove("ε")
 						firstSets[left].Append(addSet.ToSlice()...)
 
-					} else if nonTerminalSetDeriveEplison[string(ch)] == NotCanDerive {
+					} else if nonTerminalSetDeriveEplison[string(ch)] == NotCanDerive { // 若不能推出空，则将 First(ch) 加入， 停止遍历
 						addSet := firstSets[string(ch)].Clone()
 						firstSets[left].Append(addSet.ToSlice()...)
 						break
 					}
 				}
 
+				// 若均能推导出 ε， 则产生式右部可以推导出 ε， 将 ε 加入 First 集合
 				if countEmpty == len(rt) {
 					firstSets[left].Add("ε")
 				}
@@ -451,30 +443,34 @@ func (g *Grammar) ShowSelectSet() {
 	}
 }
 
-// FirstLetterSubstitution 将产生式右侧第一个字符为非终结符的进行代入替换
+// FirstLetterSubstitution 将产生式右侧第一个字符为非终结符的进行代入替换， 同时返回是否有产生式发生改变
 // 对每个非终结符 A（按顺序），对所有在 A 之前的非终结符 B：
-// 找到所有 A -> B... 的产生式，用 B 的产生式右侧代替 B 进行替换
-func (g *Grammar) FirstLetterSubstitution() bool {
-	changed := false
+// 找到所有 A -> B... 的产生式，用 B 的产生式右部进行替换
+func (g *Grammar) FirstLetterSubstitution() (isChanged bool) {
+
+	// 遍历非终结符集
 	for i := 0; i < len(g.NonTerminalSet); i++ {
 		it1 := g.NonTerminalSet[i]
+		// 取当前非终结符集前的终结符
 		for j := 0; j < i; j++ {
 			it2 := g.NonTerminalSet[j]
+			// 初始化存放新的产生式
 			var newP []string
 
+			// 取出t1 的所有产生式
 			if rights, exists := g.Productions[it1]; exists {
 				for _, right := range rights {
+
 					// 检查右侧第一个字符是否为非终结符 it2
 					if strings.HasPrefix(right, it2) {
 						// 找到所有以 it2 为左部的产生式
 						if it2Rights, exists2 := g.Productions[it2]; exists2 {
 							for _, it2Right := range it2Rights {
-								// 拼接：it2的产生式 + 原产生式去掉第一个非终结符后的部分
+								// 如果不为ε， 拼接：it2的产生式右部 + 原产生式去掉第一个非终结符后的部分
 								if it2Right != "ε" {
 									newRight := it2Right + right[len(it2):]
 									newP = append(newP, newRight)
-								} else {
-									// 如果是 ε，则只保留原产生式去掉第一个非终结符后的部分
+								} else { // 如果是 ε，则只保留原产生式去掉第一个非终结符后的部分
 									newRight := right[len(it2):]
 									newP = append(newP, newRight)
 								}
@@ -488,7 +484,7 @@ func (g *Grammar) FirstLetterSubstitution() bool {
 
 				// 如果产生式集合发生变化，标记为已修改
 				if !stringSlicesEqual(g.Productions[it1], newP) {
-					changed = true
+					isChanged = true
 				}
 
 				// 用新产生式替换旧产生式
@@ -496,8 +492,7 @@ func (g *Grammar) FirstLetterSubstitution() bool {
 			}
 		}
 	}
-
-	return changed
+	return
 }
 
 // FirstLetterSubstitutionForCommonFactor 按产生式来处理代入替换，不按顺序
@@ -591,9 +586,14 @@ func (g *Grammar) HaveCommonFactor() bool {
 }
 
 func (g *Grammar) HaveLeftRecursion() bool {
+
+	// 克隆原文法，避免
 	g2 := g.clone()
+
+	// 消除间接左递归
 	g2.FirstLetterSubstitution()
 
+	// 判断是否存在直接左递归
 	for left, rights := range g2.Productions {
 		for _, right := range rights {
 			if right == "" || right == "ε" {
@@ -604,6 +604,7 @@ func (g *Grammar) HaveLeftRecursion() bool {
 			}
 		}
 	}
+
 	return false
 }
 
