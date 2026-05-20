@@ -719,7 +719,9 @@ func (g *Grammar) ParsingCommonFactor() {
 
 func (g *Grammar) ParsingDirectLeftRecursion() {
 	for {
+		// 产生式集合是否发生改变
 		changed := false
+
 		for _, left := range g.NonTerminalSet {
 			rights, ok := g.Productions[left]
 			if !ok || len(rights) == 0 {
