@@ -722,64 +722,77 @@ func (g *Grammar) ParsingDirectLeftRecursion() {
 		// 产生式集合是否发生改变
 		changed := false
 
+		// 遍历所有产生式
 		for _, left := range g.NonTerminalSet {
 			rights, ok := g.Productions[left]
 			if !ok || len(rights) == 0 {
 				continue
 			}
 
+			// 记录形如A -> Ab的产生式
 			recurIndices := make([]int, 0)
+			// 记录形如A -> b 的产生式
 			endIndices := make([]int, 0)
+
 			for i, right := range rights {
-				if right == "" || right == "ε" {
-					endIndices = append(endIndices, i)
-					continue
-				}
+				// 若形如A -> Ab， 则记录在recurIndices中
 				if strings.HasPrefix(right, left) {
 					recurIndices = append(recurIndices, i)
-				} else {
+				} else { // 若形如A -> b， 则记录在endIndices中
 					endIndices = append(endIndices, i)
 				}
 			}
 
+			// 如无直接左递归，则遍历下一个非终结符
 			if len(recurIndices) == 0 {
 				continue
 			}
 
+			// 获取新的非终结符表示
 			newNT := g.getNewNonTerminal()
 			g.NonTerminalSet = append(g.NonTerminalSet, newNT)
 
 			newNTProductions := make([]string, 0, len(recurIndices)+1)
+
+			// 构造新非终结符的产生式, 例如A -> Ab, 构造B -> bB
 			for _, idx := range recurIndices {
 				right := rights[idx]
 				rr := []rune(right)
-				suffix := ""
-				if len(rr) > len([]rune(left)) {
-					suffix = string(rr[len([]rune(left)):])
-				}
+
+				// 取出除去非终结符部分的右部作为前缀
+				suffix := string(rr[len([]rune(left)):])
+
+				// 构造产生式
 				newNTProductions = append(newNTProductions, suffix+newNT)
 			}
+
+			// 添加 -> ε 的产生式
 			newNTProductions = append(newNTProductions, "ε")
 
+			// 构造原非终结符到新终结符的产生式，例如A -> b, 构造A -> bB
 			newLeftProductions := make([]string, 0, len(endIndices))
 			for _, idx := range endIndices {
 				right := rights[idx]
+				// 若原产生式右部为 ε, 则新右部为新非终结符
 				if right == "ε" {
 					newLeftProductions = append(newLeftProductions, newNT)
-				} else {
+				} else { // 否则为原右部 + 新非终结符
 					newLeftProductions = append(newLeftProductions, right+newNT)
 				}
 			}
+
 			if len(newLeftProductions) == 0 {
 				newLeftProductions = append(newLeftProductions, newNT)
 			}
 
+			// 将新产生式加入文法中
 			g.Productions[left] = newLeftProductions
 			g.Productions[newNT] = append(g.Productions[newNT], newNTProductions...)
 			changed = true
 			break
 		}
 
+		// 若本次遍历无新产生式产生，则结束循环
 		if !changed {
 			break
 		}
