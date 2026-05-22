@@ -343,34 +343,50 @@ func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
 				// 循环判断
 				rt := []rune(right)
 				l := len(rt)
+				// 遍历每个产生式的每一个字符
 				for i, ch := range rt {
-					// 为非终结符
 					chStr := string(ch)
-					if chStr != "ε" && !slices.Contains(g.TerminalSet, chStr) {
-						if _, ok := followSets[chStr]; !ok {
-							followSets[chStr] = mapset.NewSet[string]()
-						}
-						pSize := followSets[chStr].Cardinality()
-						// ch 不是最后一个字符
-						if i != l-1 {
-							bch := string(rt[i+1])
+					// 为非终结符
+					if slices.Contains(g.NonTerminalSet, chStr) {
 
-							if slices.Contains(g.TerminalSet, bch) {
-								followSets[chStr].Add(bch)
-							} else {
-								if _, ok := firstSets[bch]; !ok {
-									firstSets[bch] = mapset.NewSet[string]()
+						pSize := followSets[chStr].Cardinality()
+						// ch 是最后一个字符
+						if i == l-1 {
+							followSets[chStr].Append(followSets[left].ToSlice()...)
+						} else { // ch 不是最后一个字符
+							canAllDeriveEmpty := true
+							for j := i + 1; j < l; j++ {
+								next := string(rt[j])
+
+								if next == "ε" {
+									continue
 								}
-								addSet := firstSets[bch].Clone()
+
+								// 若后继为终结符，则不能推出ε，将该字符加入 Follow 集合
+								if slices.Contains(g.TerminalSet, next) {
+									followSets[chStr].Add(next)
+									canAllDeriveEmpty = false
+									break
+								}
+
+								// 若后继为非终结符，将 First(next) - ε 加入 Follow 集合
+								addSet := firstSets[next].Clone()
 								addSet.Remove("ε")
 								followSets[chStr].Append(addSet.ToSlice()...)
-								if firstSets[bch].Contains("ε") {
-									followSets[chStr].Append(followSets[left].ToSlice()...)
+								// 若不能推出ε，则结束
+								if !firstSets[next].Contains("ε") {
+									canAllDeriveEmpty = false
+									break
 								}
 							}
-						} else {
-							followSets[chStr].Append(followSets[left].ToSlice()...)
+
+							// 若后继能推导出 ε, 则将 Follow(left) 加入 Follow 集合
+							if canAllDeriveEmpty {
+								followSets[chStr].Append(followSets[left].ToSlice()...)
+							}
 						}
+
+						// 集合大小发生变化，记录Flag
 						if followSets[chStr].Cardinality() > pSize {
 							flag = false
 						}
@@ -378,6 +394,7 @@ func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
 				}
 			}
 		}
+
 		// 如果遍历一遍后First 集合不再改变，则结束
 		if flag {
 			break
@@ -500,6 +517,7 @@ func (g *Grammar) FirstLetterSubstitution() (isChanged bool) {
 func (g *Grammar) FirstLetterSubstitutionForCommonFactor() {
 
 	for {
+		// 判断是否有产生式发生改变
 		localChanged := false
 
 		for left, rights := range g.Productions {
@@ -519,22 +537,27 @@ func (g *Grammar) FirstLetterSubstitutionForCommonFactor() {
 					// 找到该非终结符的所有产生式进行替换
 					if ntRights, exists := g.Productions[firstChar]; exists {
 						for _, ntRight := range ntRights {
+							// 若产生式右部不为 ε
 							if ntRight != "ε" {
 								// 若首字符为非终结符，则不替换
 								if g.containsNonTerminal(string(ntRight[0])) {
 									continue
 								}
-
+								// 替换产生式右部非终结符
 								newRight := ntRight + right[len(firstChar):]
 								newP = append(newP, newRight)
-							} else {
+							} else { // 若产生式右部为 ε, 则去掉右部非终结符
 								newRight := right[len(firstChar):]
+
+								// 如果新产生式为空，则形如 A -> ε
 								if newRight == "" {
 									newRight = "ε"
 								}
 								newP = append(newP, newRight)
 							}
 						}
+
+						// 记录进行了修改
 						localChanged = true
 					}
 				} else {
@@ -558,8 +581,10 @@ func (g *Grammar) FirstLetterSubstitutionForCommonFactor() {
 }
 
 func (g *Grammar) HaveCommonFactor() bool {
+
 	// 使用当前文法副本进行判断，避免修改原文法
 	g2 := g.clone()
+	// 提取隐藏的左公共因子
 	g2.FirstLetterSubstitutionForCommonFactor()
 
 	for _, left := range g2.NonTerminalSet {
@@ -576,6 +601,8 @@ func (g *Grammar) HaveCommonFactor() bool {
 				if len(rights[j]) == 0 {
 					continue
 				}
+
+				// 若存在两个产生式含有左公共因子，则返回 True
 				if firstI == string([]rune(rights[j])[0]) {
 					return true
 				}

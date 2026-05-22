@@ -10,6 +10,7 @@
 
 - **lab1/**：NFA 转换 DFA 
 - **lab2/**：DFA 最小化
+- **lab3/**：LL(1) 文法判断与改写
 
 ## 实验1
 
@@ -190,6 +191,65 @@ a,b
 **最小化 DFA**
 
 ![DFA](images/lab2/graph_minimal_dfa.png)
+
+## 实验3
+
+### 功能说明
+
+1. 读取文法文件，解析非终结符、终结符及产生式
+2. 计算 FIRST、FOLLOW 和 SELECT 集合，判断是否为 LL1 文法
+3. 若不是 LL1 文法，尝试消除左递归和左公共因子，并删除不可达产生式
+4. 支持命令行参数，可指定输入路径
+
+### 实验3 目录结构
+
+```plain text
+lab3/
+├── cmd/
+│   └── main.go            # 程序入口
+├── input/                 # 文法输入文件目录
+└── internal/
+    └── grammar/
+        └── grammar.go     # 文法分析、LL1 判定及改写逻辑
+```
+
+### 运行实验3
+
+```bash
+# 进入 lab3 目录运行
+cd lab3
+go run ./cmd -input input/g1.txt
+```
+
+### 文法输入文件格式（g1.txt）
+
+配置文件按以下格式编写：
+
+```plain text
+非终结符（逗号分隔）
+终结符（逗号分隔）
+产生式（每行一个，格式：A -> α）
+```
+
+- 空产生式使用 `ε` 表示
+- 结束符默认使用 `#`
+
+### 示例 g1.txt
+
+```plain text
+S, A, B, C, D
+a, b, c
+S -> AB
+S -> bC
+A -> ε
+A -> b
+B -> ε
+B -> aD
+C -> AD
+C -> b
+D -> aS
+D -> c
+```
 
 
 
