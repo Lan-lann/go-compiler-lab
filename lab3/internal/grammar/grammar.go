@@ -3,6 +3,7 @@ package grammar
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"maps"
 	"os"
 	"slices"
@@ -34,6 +35,10 @@ func LoadGrammar(filename string) (*Grammar, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("读取文件失败: %v", err)
+	}
+
 	lines := make([]string, 0)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
