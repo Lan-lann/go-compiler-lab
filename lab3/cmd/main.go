@@ -19,9 +19,13 @@ func main() {
 	fmt.Println(g)
 	// 首先判断是否为 LL1 文法
 	if g.IsLL1() {
+
 		fmt.Println("是 LL1 文法")
+
 		g.ShowSelectSet()
+
 	} else { // 若不是 LL1 文法，尝试进行改写
+
 		fmt.Println("不是 LL1 文法, 尝试改写")
 
 		// 判断是否含有左递归

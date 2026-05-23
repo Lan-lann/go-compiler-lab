@@ -639,23 +639,25 @@ func (g *Grammar) DelUnreachableProduction() {
 	reachable := mapset.NewSet[string]()
 	stack := []string{g.Start}
 
+	// 从开始符出发，遍历栈中元素
 	for len(stack) > 0 {
 		ch := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		if reachable.Contains(ch) {
-			continue
-		}
-		reachable.Add(ch)
+
+		// 遍历该非终结符的产生式右部中的所有非终结符
 		for _, right := range g.Productions[ch] {
 			for _, ch := range right {
-				sym := string(ch)
-				if g.containsNonTerminal(sym) && !reachable.Contains(sym) {
-					stack = append(stack, sym)
+				s := string(ch)
+				// 如果为非终结符且非添加到可到达集合，则添加
+				if g.containsNonTerminal(s) && !reachable.Contains(s) {
+					reachable.Add(s)
+					stack = append(stack, s)
 				}
 			}
 		}
 	}
 
+	// 删除不可到达的非终结符
 	newNonTerminals := make([]string, 0, len(g.NonTerminalSet))
 	for _, nt := range g.NonTerminalSet {
 		if reachable.Contains(nt) {
@@ -664,6 +666,7 @@ func (g *Grammar) DelUnreachableProduction() {
 	}
 	g.NonTerminalSet = newNonTerminals
 
+	// 删除不可到达的非终结符的产生式
 	for left := range g.Productions {
 		if !reachable.Contains(left) {
 			delete(g.Productions, left)
@@ -673,6 +676,7 @@ func (g *Grammar) DelUnreachableProduction() {
 
 func (g *Grammar) ParsingCommonFactor() {
 	for {
+		// 记录是否有产生式变化
 		changed := false
 		for _, left := range g.NonTerminalSet {
 			rights, ok := g.Productions[left]
@@ -680,13 +684,14 @@ func (g *Grammar) ParsingCommonFactor() {
 				continue
 			}
 
+			// 记录产生式右部最长长度
 			maxLen := 0
 			for _, right := range rights {
 				if l := len([]rune(right)); l > maxLen {
 					maxLen = l
 				}
 			}
-
+			// 遍历右部长度，先匹配最长的
 			for length := maxLen; length >= 1 && !changed; length-- {
 				prefixGroups := map[string][]int{}
 				for i, right := range rights {
@@ -694,11 +699,14 @@ func (g *Grammar) ParsingCommonFactor() {
 					if len(rr) < length {
 						continue
 					}
+					// 将具有相同前缀的记录到prefixGroups中
 					prefix := string(rr[:length])
 					prefixGroups[prefix] = append(prefixGroups[prefix], i)
 				}
 
+				// 枚举前缀
 				for prefix, indices := range prefixGroups {
+					// 若只有一个产生式，则不用提取左公共因子
 					if len(indices) <= 1 {
 						continue
 					}
@@ -709,26 +717,40 @@ func (g *Grammar) ParsingCommonFactor() {
 					newNTProductions := make([]string, 0, len(indices))
 					remainingRights := make([]string, 0, len(rights)-len(indices))
 					remove := map[int]struct{}{}
+
+					// 记录需要提取左公共因子的下标
 					for _, idx := range indices {
 						remove[idx] = struct{}{}
 					}
 
+					// 遍历需要提取左公共因子的产生式
 					for idx, right := range rights {
 						if _, skip := remove[idx]; skip {
 							rr := []rune(right)
+							// 若公因子部分==产生式长度，则提取后为ε
 							if len(rr) == length {
 								newNTProductions = append(newNTProductions, "ε")
-							} else {
+							} else { // 否则，提取后为公因子右部
 								newNTProductions = append(newNTProductions, string(rr[length:]))
 							}
 						} else {
+							// 保留无需提取的产生式
 							remainingRights = append(remainingRights, right)
 						}
 					}
 
+					// 原非终结符添加到新非终结符的产生式
 					g.Productions[left] = append(remainingRights, prefix+newNT)
+
+					// 添加新非终结符产生式
 					g.Productions[newNT] = append(g.Productions[newNT], newNTProductions...)
+
+					// 记录产生式发生变化
 					changed = true
+					break
+				}
+
+				if changed {
 					break
 				}
 			}
