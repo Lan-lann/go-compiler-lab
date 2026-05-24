@@ -12,6 +12,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 )
 
+// 文法数据结构定义
 type Grammar struct {
 	Start          string
 	NonTerminalSet []string
@@ -19,6 +20,7 @@ type Grammar struct {
 	Productions    map[string][]string
 }
 
+// 定义常量代表是否可以推导出 ε
 type DependEplison int
 
 const (
