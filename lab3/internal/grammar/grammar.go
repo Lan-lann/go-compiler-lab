@@ -650,14 +650,16 @@ func (g *Grammar) DelUnreachableProduction() {
 	for len(stack) > 0 {
 		ch := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-
+		if reachable.Contains(ch) {
+			continue
+		}
+		reachable.Add(ch)
 		// 遍历该非终结符的产生式右部中的所有非终结符
 		for _, right := range g.Productions[ch] {
 			for _, ch := range right {
 				s := string(ch)
 				// 如果为非终结符且非添加到可到达集合，则添加
 				if g.containsNonTerminal(s) && !reachable.Contains(s) {
-					reachable.Add(s)
 					stack = append(stack, s)
 				}
 			}
