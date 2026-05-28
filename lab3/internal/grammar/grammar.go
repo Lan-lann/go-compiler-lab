@@ -94,7 +94,7 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 		// 2. 删除所有右部含有终结符的产生式 ,若这使得以某一非终结符为左部的所有产生式都被删除 ,
 		// 则将数组中对应该非终结符的标记值改为"否",说明该非终结符不能推出 ε。
 
-		// 遍历某一非终结符的产生式(采用倒序遍历，避免产生式前移导致直接跳过下一产生式)
+		// 遍历某一终结符的产生式(采用倒序遍历，避免产生式前移导致直接跳过下一产生式)
 		for idx := len(rights) - 1; idx >= 0; idx-- {
 			// 取出该产生式
 			right := rights[idx]
@@ -108,7 +108,7 @@ func (g *Grammar) FindDeriveEplison() map[string]DependEplison {
 				}
 			}
 
-			// 若该非终结符的所有产生式都被删除，则将数组中对应该非终结符的标记值改为"否
+			// 若该终结符的所有产生式都被删除，则将数组中对应该非终结符的标记值改为"否
 			if len(productions[left]) == 0 {
 				nonTerminalSetDeriveEplison[left] = NotCanDerive
 				// 从产生式集合中删除该映射, 例如: A:[]为空，删除 A
@@ -402,7 +402,7 @@ func (g *Grammar) GetFollowSet() map[string]mapset.Set[string] {
 			}
 		}
 
-		// 如果遍历一遍后First 集合不再改变，则结束
+		// 如果遍历一遍后Follow 集合不再改变，则结束
 		if flag {
 			break
 		}
@@ -422,13 +422,13 @@ func (g *Grammar) GetSelectSet() map[string][]mapset.Set[string] {
 		for idx, right := range rights {
 
 			selectSets[left] = append(selectSets[left], mapset.NewSet[string]())
-			// 若右部能推导出ε，则 First 集合既含有右部的 First 集合（除去ε）也包含左部的 Follow 集合
+			// 若右部能推导出ε，则 Select 集合既含有右部的 First 集合（除去ε）也包含左部的 Follow 集合
 			if rightFirstSets[right].Contains("ε") {
 				addSet := rightFirstSets[right].Clone()
 				addSet.Remove("ε")
 				selectSets[left][idx].Append(addSet.ToSlice()...)
 				selectSets[left][idx].Append(followSet[left].ToSlice()...)
-			} else { // 若右部不能推导出ε，则 First 集合只含有右部的 First 集合（除去ε）
+			} else { // 若右部不能推导出ε，则 Select 集合只含有右部的 First 集合（除去ε）
 				addSet := rightFirstSets[right].Clone()
 				addSet.Remove("ε")
 				selectSets[left][idx].Append(addSet.ToSlice()...)
