@@ -461,8 +461,8 @@ func (g *Grammar) ShowSelectSet() {
 
 	selectSets := g.GetSelectSet()
 	for left, rights := range selectSets {
-		for _, right := range rights {
-			fmt.Printf("SELECT(%s) = {%s}\n", left, strings.Join(right.ToSlice(), ","))
+		for idx, right := range rights {
+			fmt.Printf("SELECT(%s) = {%s}\n", left+"->"+g.Productions[left][idx], strings.Join(right.ToSlice(), ","))
 		}
 	}
 }
