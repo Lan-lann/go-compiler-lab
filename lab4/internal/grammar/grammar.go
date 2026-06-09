@@ -210,7 +210,7 @@ func (g *Grammar) GetNonTerminalFirstSet() map[string]mapset.Set[string] {
 
 				if string(rt[0]) == "ε" {
 					firstSets[left].Add("ε")
-					break
+					continue
 				}
 				// 记录右部是否均能推导出 ε
 				countEmpty := 0

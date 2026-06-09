@@ -17,6 +17,7 @@ func main() {
 	}
 
 	fmt.Println(g)
+
 	flag := false
 	// 首先判断是否为 LL1 文法
 	if g.IsLL1() {
