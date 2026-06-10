@@ -670,7 +670,7 @@ func (g *Grammar) DelUnreachableProduction() {
 		for _, right := range g.Productions[ch] {
 			for _, ch := range right {
 				s := string(ch)
-				// 如果为非终结符且非添加到可到达集合，则添加
+				// 如果为非终结符且未添加到可到达集合，则添加
 				if g.containsNonTerminal(s) && !reachable.Contains(s) {
 					stack = append(stack, s)
 				}
