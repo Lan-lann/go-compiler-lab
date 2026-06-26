@@ -412,6 +412,60 @@ B -> d
 
 - `github.com/goccy/go-graphviz`：Graphviz 图像导出
 - `github.com/jedib0t/go-pretty/v6/table`：表格美化输出
+- `github.com/jedib0t/go-pretty/v6/text`：表格对齐和样式
+
+## 实验6
+
+### 功能说明
+
+1. 实现简单算术表达式的自底向上 LR 语法分析器
+2. 打印 LR 语法分析过程，先显示将要执行的 ACTION，再执行归约/移入
+3. 打印语义动作，显示归约时的计算过程和结果
+4. 实现自顶向下递归下降分析器，支持相同表达式的解析和求值
+
+### 实验6 目录结构
+
+```plain text
+lab6/
+├── cmd/
+│   ├── bottomup/
+│   │   └── main.go       # 底层 LR 解析器入口
+│   └── topdown/
+│       └── main.go       # 递归下降解析器入口
+└── internal/
+    ├── bottomup/
+    │   └── parser.go     # LR 语法分析、语义动作和过程打印
+    └── topdown/
+        └── parser.go     # 递归下降解析器实现
+```
+
+### 运行实验6
+
+```bash
+cd lab6
+go run ./cmd/bottomup -input "21+4*2"
+```
+
+或
+
+```bash
+cd lab6
+go run ./cmd/topdown -input "21+4*2"
+```
+
+### 参数说明
+
+- `-input`：指定要计算的算术表达式，默认 `1+2-3+4`
+
+### 结果说明
+
+- `cmd/bottomup` 会打印 LR 语法分析过程表格，包含状态栈、符号栈、语义栈、剩余输入、ACTION 和语义动作
+- `cmd/topdown` 会进行自顶向下解析并输出表达式计算结果
+
+### 依赖说明
+
+- `github.com/jedib0t/go-pretty/v6/table`：表格美化输出
+- `github.com/jedib0t/go-pretty/v6/text`：表格对齐和样式
 
 
 
