@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	inputExpr := flag.String("input", "1+2-3+4", "指定要计算的简单表达式")
+	inputExpr := flag.String("input", "3+4-5", "指定要计算的简单表达式")
 	flag.Parse()
 
 	result, err := bottomup.ParseExpression(*inputExpr)

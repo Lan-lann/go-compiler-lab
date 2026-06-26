@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	inputExpr := flag.String("input", "1+2-3+4", "指定要计算的简单表达式")
+	inputExpr := flag.String("input", "2+3*5", "指定要计算的简单表达式")
 	// treeOutput := flag.String("tree", "output/syntax_tree.png", "指定语法树输出路径")
 	flag.Parse()
 
